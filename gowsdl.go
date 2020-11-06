@@ -255,6 +255,19 @@ func (g *GoWSDL) resolveXSDExternals(schema *XSDSchema, loc *Location) error {
 }
 
 func (g *GoWSDL) genTypes() ([]byte, error) {
+	globalTargetNamespace := ""
+
+	setTargetNamespace := func(ns string) string {
+		globalTargetNamespace = ns
+		return ""
+	}
+
+	getQualifiedName := func(name string) string {
+		if globalTargetNamespace != "" {
+			return globalTargetNamespace + " " + name
+		}
+		return name
+	}
 	funcMap := template.FuncMap{
 		"toGoType":                 toGoType,
 		"stripns":                  stripns,
@@ -268,6 +281,8 @@ func (g *GoWSDL) genTypes() ([]byte, error) {
 		"goString":                 goString,
 		"findNameByType":           g.findNameByType,
 		"removePointerFromType":    removePointerFromType,
+		"setTargetNamespace":       setTargetNamespace,
+		"getQualifiedName":         getQualifiedName,
 	}
 
 	data := new(bytes.Buffer)
@@ -419,29 +434,33 @@ func goString(s string) string {
 }
 
 var xsd2GoTypes = map[string]string{
-	"string":        "string",
-	"token":         "string",
-	"float":         "float32",
-	"double":        "float64",
-	"decimal":       "float64",
-	"integer":       "int32",
-	"int":           "int32",
-	"short":         "int16",
-	"byte":          "int8",
-	"long":          "int64",
-	"boolean":       "bool",
-	"datetime":      "time.Time",
-	"date":          "time.Time",
-	"time":          "time.Time",
-	"base64binary":  "[]byte",
-	"hexbinary":     "[]byte",
-	"unsignedint":   "uint32",
-	"unsignedshort": "uint16",
-	"unsignedbyte":  "byte",
-	"unsignedlong":  "uint64",
-	"anytype":       "AnyType",
-	"ncname":        "NCName",
-	"anyuri":        "AnyURI",
+	"string":             "string",
+	"token":              "string",
+	"float":              "float32",
+	"double":             "float64",
+	"decimal":            "float64",
+	"integer":            "int32",
+	"int":                "int32",
+	"short":              "int16",
+	"byte":               "int8",
+	"long":               "int64",
+	"boolean":            "bool",
+	"datetime":           "time.Time",
+	"date":               "time.Time",
+	"time":               "time.Time",
+	"base64binary":       "[]byte",
+	"hexbinary":          "[]byte",
+	"unsignedint":        "uint32",
+	"unsignedshort":      "uint16",
+	"unsignedbyte":       "byte",
+	"unsignedlong":       "uint64",
+	"anytype":            "AnyType",
+	"ncname":             "NCName",
+	"anyuri":             "AnyURI",
+	"qname":              "string",
+	"duration":           "string",
+	"anysimpletype":      "string",
+	"nonnegativeinteger": "uint32",
 }
 
 func removeNS(xsdType string) string {

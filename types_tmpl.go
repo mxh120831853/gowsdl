@@ -84,16 +84,16 @@ var typesTmpl = `
 			{{if .SimpleType}}
 				{{if .Doc}} {{.Doc | comment}} {{end}}
 				{{if ne .SimpleType.List.ItemType ""}}
-					{{ normalize .Name | makeFieldPublic}} []{{toGoType .SimpleType.List.ItemType}} ` + "`" + `xml:"{{.Name}},omitempty" json:"{{.Name}},omitempty"` + "`" + `
+					{{ normalize .Name | makeFieldPublic}} []{{toGoType .SimpleType.List.ItemType}} ` + "`" + `xml:"{{getQualifiedName .Name}},omitempty" json:"{{.Name}},omitempty"` + "`" + `
 				{{else}}
-					{{ normalize .Name | makeFieldPublic}} {{toGoType .SimpleType.Restriction.Base}} ` + "`" + `xml:"{{.Name}},omitempty" json:"{{.Name}},omitempty"` + "`" + `
+					{{ normalize .Name | makeFieldPublic}} {{toGoType .SimpleType.Restriction.Base}} ` + "`" + `xml:"{{getQualifiedName .Name}},omitempty" json:"{{.Name}},omitempty"` + "`" + `
 				{{end}}
 			{{else}}
 				{{template "ComplexTypeInline" .}}
 			{{end}}
 		{{else}}
 			{{if .Doc}}{{.Doc | comment}} {{end}}
-			{{replaceAttrReservedWords .Name | makeFieldPublic}} {{if eq .MaxOccurs "unbounded"}}[]{{end}}{{.Type | toGoType}} ` + "`" + `xml:"{{.Name}},omitempty" json:"{{.Name}},omitempty"` + "`" + ` {{end}}
+			{{replaceAttrReservedWords .Name | makeFieldPublic}} {{if eq .MaxOccurs "unbounded"}}[]{{end}}{{.Type | toGoType}} ` + "`" + `xml:"{{getQualifiedName .Name}},omitempty" json:"{{.Name}},omitempty"` + "`" + ` {{end}}
 		{{end}}
 	{{end}}
 {{end}}
@@ -105,7 +105,9 @@ var typesTmpl = `
 {{end}}
 
 {{range .Schemas}}
-	{{ $targetNamespace := .TargetNamespace }}
+	{{$ns := .TargetNamespace}}
+	
+	{{setTargetNamespace $ns}}
 
 	{{range .SimpleType}}
 		{{template "SimpleType" .}}
@@ -117,7 +119,10 @@ var typesTmpl = `
 			{{/* ComplexTypeLocal */}}
 			{{with .ComplexType}}
 				type {{$name | replaceReservedWords | makePublic}} struct {
-					XMLName xml.Name ` + "`xml:\"{{$targetNamespace}} {{$name}}\"`" + `
+					XMLName xml.Name ` + "`xml:\"{{getQualifiedName $name}}\"`" + `
+
+					{{setTargetNamespace ""}}
+
 					{{if ne .ComplexContent.Extension.Base ""}}
 						{{template "ComplexContent" .ComplexContent}}
 					{{else if ne .SimpleContent.Extension.Base ""}}
@@ -130,6 +135,8 @@ var typesTmpl = `
 						{{template "Elements" .All}}
 						{{template "Attributes" .Attributes}}
 					{{end}}
+
+					{{setTargetNamespace $ns}}
 				}
 			{{end}}
 		{{else}}
@@ -148,7 +155,8 @@ var typesTmpl = `
 			type {{$name}} struct {
 				{{$typ := findNameByType .Name}}
 				{{if ne $name $typ}}
-					XMLName xml.Name ` + "`xml:\"{{$targetNamespace}} {{$typ}}\"`" + `
+					XMLName xml.Name ` + "`xml:\"{{getQualifiedName $typ}}\"`" + `
+					{{setTargetNamespace ""}}
 				{{end}}
 				
 				{{if ne .ComplexContent.Extension.Base ""}}
@@ -163,8 +171,15 @@ var typesTmpl = `
 					{{template "Elements" .All}}
 					{{template "Attributes" .Attributes}}
 				{{end}}
+
+				{{if ne $name $typ}}
+					{{setTargetNamespace $ns}}
+				{{end}}
 			}
-		{{end}}	
+		{{end}}
 	{{end}}
+
+	{{setTargetNamespace ""}}
+	
 {{end}}
 `

@@ -13,7 +13,7 @@ import (
 	"context"
 	"encoding/xml"
 	"time"
-	"github.com/hooklift/gowsdl/soap"
+	"onvif_test/soap"
 
 	{{/*range .Imports*/}}
 		{{/*.*/}}
